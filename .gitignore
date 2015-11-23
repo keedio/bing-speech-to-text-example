@@ -3,3 +3,4 @@
 *.ser
 *.iml
 dependency-reduced-pom.xml
+*.bak
