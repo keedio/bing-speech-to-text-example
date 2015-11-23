@@ -24,7 +24,7 @@ import java.net.URLEncoder;
 import java.util.*;
 
 /**
- * Created by Luca Rosellini <lrosellini@keedio.com> on 6/11/15.
+ * Example app showing the usage of Azure Speech-to-text REST API.
  */
 @SpringBootApplication
 public class Application implements CommandLineRunner {
@@ -46,6 +46,14 @@ public class Application implements CommandLineRunner {
         SpringApplication.run(Application.class, args);
     }
 
+    /**
+     * Application entry point, pass the "auth" string as an argument to force authentication against MS server.
+     *
+     * Pass the path to the wav file to call the Microsoft conversion API.
+     *
+     * @param args
+     * @throws Exception
+     */
     @Override
     public void run(String... args) throws Exception {
         String auth = null;
@@ -67,6 +75,20 @@ public class Application implements CommandLineRunner {
         }
     }
 
+    /**
+     * Call the conversion API.
+     *
+     * Check out MS documentation at:
+     * https://onedrive.live.com/view.aspx?resid=9A8C02C3B59E575!106&ithint=file%2cdocx&app=Word&authkey=!AIEJaNeh8CcDTjU
+     *
+     * (you need an Azure account to acces the above file).
+     *
+     * Relies on the existence of a BING_AUTH environment variable to verify the current device has been properly authenticated.
+     *
+     * @param audioFile the absolute path of the wav file to convert.
+     * @return a {@see Conversion} object encapsulating the info returned by the Microsoft API.
+     * @throws IOException
+     */
     private Conversion convert(String audioFile) throws IOException {
         String auth;
         File file = new File(audioFile);
@@ -109,6 +131,13 @@ public class Application implements CommandLineRunner {
         return conversion.getBody();
     }
 
+    /**
+     * Authentication helper method.
+     *
+     *
+     * @return
+     * @throws UnsupportedEncodingException
+     */
     private ResponseEntity<AdmAccessToken> authenticate() throws UnsupportedEncodingException {
         RestTemplate restTemplate = new RestTemplate();
 
