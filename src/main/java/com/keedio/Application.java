@@ -1,9 +1,6 @@
 package com.keedio;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.keedio.domain.AdmAccessToken;
-import com.keedio.domain.Conversion;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +12,6 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -41,13 +37,13 @@ public class Application implements CommandLineRunner {
     @Value("${bing.speech.to.text.example.device.id}")
     private String testAppDeviceId;
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
     /**
      * Application entry point, pass the "auth" string as an argument to force authentication against MS server.
-     *
+     * <p>
      * Pass the path to the wav file to call the Microsoft conversion API.
      *
      * @param args
@@ -67,7 +63,7 @@ public class Application implements CommandLineRunner {
         } else {
             String audioFile = args[0];
 
-            Conversion c = convert(audioFile);
+            Map<String, String> c = convert(audioFile);
 
             if (c != null)
                 log.info(c.toString());
@@ -76,27 +72,24 @@ public class Application implements CommandLineRunner {
 
     /**
      * Call the conversion API.
-     *
+     * <p>
      * Check out MS documentation at:
      * https://onedrive.live.com/view.aspx?resid=9A8C02C3B59E575!106&ithint=file%2cdocx&app=Word&authkey=!AIEJaNeh8CcDTjU
-     *
+     * <p>
      * (you need an Azure account to acces the above file).
-     *
+     * <p>
      * Relies on the existence of a BING_AUTH environment variable to verify the current device has been properly authenticated.
      *
      * @param audioFile the absolute path of the wav file to convert.
      * @return a {@see Conversion} object encapsulating the info returned by the Microsoft API.
      * @throws IOException
      */
-    private Conversion convert(String audioFile) throws IOException {
-        String auth;
-        File file = new File(audioFile);
-
-        auth = System.getenv("BING_AUTH");
+    private HashMap<String, String> convert(String audioFile) throws IOException {
+        String auth = System.getenv("BING_AUTH");
 
         log.info("Auth:\n" + auth);
 
-        String authToken = "Bearer " + auth ;
+        String authToken = "Bearer " + auth;
 
         HttpHeaders headers = new HttpHeaders();
         List<MediaType> mediaTypes = new ArrayList<>();
@@ -106,12 +99,13 @@ public class Application implements CommandLineRunner {
         headers.setAccept(mediaTypes);
 
         headers.add(HttpHeaders.AUTHORIZATION, authToken);
-        headers.add(HttpHeaders.HOST,"speech.platform.bing.com");
-        headers.set(HttpHeaders.CONTENT_TYPE,"audio/wav;codec=\"audio/pcm\";samplerate=8000");
-        headers.set(HttpHeaders.CONTENT_LENGTH,""+file.length());
+        headers.add(HttpHeaders.HOST, "speech.platform.bing.com");
+        headers.set(HttpHeaders.CONTENT_TYPE, "audio/wav;codec=\"audio/pcm\";samplerate=8000;trustsourcerate=false");
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<byte[]> entity = new HttpEntity<>(IOUtils.toByteArray(new FileInputStream(audioFile)),headers);
+        HttpEntity<byte[]> entity = new HttpEntity<>(IOUtils.toByteArray(new FileInputStream(audioFile)), headers);
+
+        String requestId = UUID.randomUUID().toString();
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("https://speech.platform.bing.com/recognize/query")
                 .queryParam("format", "json")
@@ -119,20 +113,22 @@ public class Application implements CommandLineRunner {
                 .queryParam("locale", "es-ES")
                 .queryParam("device.os", "Linux")
                 .queryParam("version", "3.0")
+                .queryParam("maxnbest", "3")
                 .queryParam("scenarios", "smd")
                 .queryParam("instanceid", testAppDeviceId)
-                .queryParam("requestid", UUID.randomUUID().toString());
+                .queryParam("requestid", requestId);
 
-        ResponseEntity<Conversion> conversion =
+        HashMap<String,String> dummy = new HashMap<>();
+
+        ResponseEntity<HashMap<String,String>> conversion =
                 restTemplate.exchange(builder.build().encode().toUri(),
-                        HttpMethod.POST, entity, Conversion.class);
+                        HttpMethod.POST, entity, (Class<HashMap<String,String>>) dummy.getClass());
 
         return conversion.getBody();
     }
 
     /**
      * Authentication helper method.
-     *
      *
      * @return
      * @throws UnsupportedEncodingException
@@ -153,7 +149,7 @@ public class Application implements CommandLineRunner {
         ResponseEntity<AdmAccessToken> result =
                 restTemplate.exchange(DATAMARKET_ACCESS_URI, HttpMethod.POST, entity, AdmAccessToken.class);
 
-        log.info("export BING_AUTH=\""+result.getBody().getAccess_token()+ "\"");
+        log.info("export BING_AUTH=\"" + result.getBody().getAccess_token() + "\"");
 
         return result;
     }
