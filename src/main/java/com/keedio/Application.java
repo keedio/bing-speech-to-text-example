@@ -2,7 +2,6 @@ package com.keedio;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.keedio.domain.AdmAccessToken;
 import com.keedio.domain.Conversion;
 import org.apache.commons.io.IOUtils;
@@ -71,7 +70,7 @@ public class Application implements CommandLineRunner {
             Conversion c = convert(audioFile);
 
             if (c != null)
-                log.info(c.getResults().toString());
+                log.info(c.toString());
         }
     }
 

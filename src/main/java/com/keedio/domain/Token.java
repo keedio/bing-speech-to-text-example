@@ -12,6 +12,16 @@ public class Token {
     private String MIDCONF;
     private String LOWCONF;
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Token{");
+        sb.append("HIGHCONF='").append(HIGHCONF).append('\'');
+        sb.append(", MIDCONF='").append(MIDCONF).append('\'');
+        sb.append(", LOWCONF='").append(LOWCONF).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
     public String getHIGHCONF() {
         return HIGHCONF;
     }
